@@ -1,0 +1,18 @@
+- block:
+    - name: "display current worker name for check status"
+      debug:
+        msg: "checking ready status for node: {{ item }} - max 20 attempts with 10s delay"
+    - name: "STAGE_[x of y] ---get new workers-nodes ready status"
+      shell: >
+        kubectl --kubeconfig=/etc/kubernetes/admin.conf
+        get nodes  -o json | jq ' .items[] | select( .metadata.name == "{{ item }}")
+        | .metadata.name + " " + .status.conditions[-1].status'
+      register: newnode_status
+      until: (newnode_status.stdout | replace('\"','')).split(' ')[1]  is search("True")
+      retries: 20
+      delay: 10
+      ignore_errors: true
+
+    - name: "print worker node - ready status notification"
+      debug:
+        msg: "Node {{ (newnode_status.stdout | replace('\"','')).split(' ')[0] }} ready status: {{ (newnode_status.stdout | replace('\"','')).split(' ')[1] }}"
