@@ -39,7 +39,8 @@
                       operator: In
                       values:
                       - controller
-                  topologyKey: kubernetes.io/hostname  
+                  topologyKey: kubernetes.io/hostname
+        timeout: 600  # Установка таймаута в 600 секунд (10 минут)
 #       values_files:
 #         - "/home/{{ os_admin_username }}/k8s_addons/ingress/ingress_controller_values.yaml"
     tags:
