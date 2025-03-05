@@ -1,0 +1,4 @@
+---
+# tasks file for k8s_addons_monitoring
+- name: STAGE_[ 9 of 18 ] --- Add Kubernetes monitoring components
+  include_tasks: k8s_addons_monitoring.yaml
