@@ -1,0 +1,10 @@
+---  
+  - name: "STAGE_[ 16.1 of 18 ] --- cleanup local files"
+    file:
+      path: "{{ item }}"
+      state: absent
+    loop:
+      - "/home/{{ os_admin_username }}/k8s_addons/"
+      - /K8s-inventory
+      - "/{{ ansible_repo_name }}"
+      - /root/ansible.log 

@@ -1,0 +1,36 @@
+---
+
+  # taint worker_node[0] for prometheus
+  - name: "STAGE_[ 8.1 of 18 ] --- taint node first worker node"
+    kubernetes.core.k8s_taint:
+      kubeconfig: "/etc/kubernetes/admin.conf"
+      state: present
+      name: "{{ worker0_name }}"
+      taints:
+      - effect: NoSchedule
+        key: "servicegroup"
+        value: "monitoring"
+  # label worker_node[0] for prometheus
+  - name: "STAGE_[ 8.2 of 18 ] --- Label worker node as monitoring roles keeper"
+    shell: |
+      kubectl --kubeconfig=/etc/kubernetes/admin.conf label node "{{ worker0_name }}" node-role.kubernetes.io/prometheus="" node-role.kubernetes.io/grafana="" servicegroup=monitoring 
+  # make two last worker nodes from inventory as unschedulable 
+  # - the goal is to dedicate standby nodes
+  - name: "STAGE_[ 8.3 of 18 ] --- DRAIN two last nodes from workers group to make them 'standby nodes'"
+    kubernetes.core.k8s_drain:
+      kubeconfig: "/etc/kubernetes/admin.conf"
+      state: cordon
+      name: "{{ item }}"
+    loop: "{{ groups.workers[(workers_count|int -2):] }}"
+  
+  - name: "STAGE_[ 8.4 of 18 ] --- Label worker node as standby reserved"
+    shell: |
+      kubectl --kubeconfig=/etc/kubernetes/admin.conf label node "{{ item }}" node-role.kubernetes.io/standby=""
+    loop: "{{ groups.workers[(workers_count|int -2):] }}"
+
+
+
+
+
+
+      
