@@ -1,0 +1,82 @@
+- name: "install haproxy and keepalived"
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  loop:
+    - haproxy
+    - keepalived
+    
+- name: "configure the kernel to use a VIP on each Haproxy node"
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_nonlocal_bind
+    value: '1'
+    reload: true
+
+- block:
+    - name: "set node priority type master" #master or backup
+      set_fact:
+        priority_type: master
+
+    - name: "display priority_type"
+      debug:
+        msg: "{{ inventory_hostname }} is {{ priority_type }}"
+          
+    - name: "wait until keepalived folder  will be created "
+      wait_for:
+        path: "/etc/keepalived/"
+        state: present
+        sleep: 5
+        delay: 5
+
+    - name: "copy keepalived template"
+      template:
+        src: "keepalived.conf_{{ priority_type }}.j2"
+        dest: /etc/keepalived/keepalived.conf
+
+  when: inventory_hostname == groups.haproxy[0]
+
+- block:
+  - name: "set node priority type backup" #master or backup
+    set_fact:
+      priority_type: backup
+
+  - name: "display priority_type"
+    debug:
+      msg: "{{ inventory_hostname }} is {{ priority_type }}"
+
+  - name: "wait until keepalived folder  will be created by cloud-init"
+    wait_for:
+      path: "/etc/keepalived/"
+      state: present
+      sleep: 5
+      delay: 5  
+
+  - name: "copy keepalived template"
+    template:
+      src: "keepalived.conf_{{ priority_type }}.j2"
+      dest: /etc/keepalived/keepalived.conf
+
+  when: inventory_hostname in groups.haproxy[1:]
+
+- name: "copy haproxy template"
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+
+- name: "enable keepalived"
+  ansible.builtin.service:
+    name: keepalived
+    enabled: yes
+
+- name: "restart  keepalived"
+  ansible.builtin.service:
+    name: keepalived
+    state: restarted
+
+- name: "restart haproxy"
+  ansible.builtin.service:
+    name: haproxy
+    state: restarted
+
+# make some test
