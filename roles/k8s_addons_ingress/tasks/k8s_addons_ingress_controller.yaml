@@ -1,4 +1,15 @@
 ---
+  - name: "STAGE_[ 11.0 of 18 ] --- Wait for master and worker nodes to be ready"
+  wait_for:
+    host: "{{ item }}"
+    port: 22
+    timeout: 300
+    state: started
+  loop: "{{ groups.masters }}"
+  connection: local
+  tags:
+    - ingress-preparation
+  
   - name:  "STAGE_[ 11.1 of 18 ] --- Add Ingress controller Server  Helm repo"
     kubernetes.core.helm_repository:
       name: ingress-nginx
@@ -40,7 +51,6 @@
                       values:
                       - controller
                   topologyKey: kubernetes.io/hostname
-        timeout: 600  # Установка таймаута в 600 секунд (10 минут)
 #       values_files:
 #         - "/home/{{ os_admin_username }}/k8s_addons/ingress/ingress_controller_values.yaml"
     tags:
